@@ -218,7 +218,7 @@ export const TRANSLATIONS: Record<Language, TranslationData> = {
     flag: '🇩🇿',
     direction: 'rtl',
     clubName: 'نادي منبر الشاب المبدع',
-    tagline: 'إبداع .. تواصل .. بناء.',
+    tagline: 'منبر يجمعنا، والإبداع يوحّدنا.',
     city: 'سوق أهراس، الجزائر',
     nav: {
       home: 'الرئيسية',
@@ -626,7 +626,7 @@ export const TRANSLATIONS: Record<Language, TranslationData> = {
     flag: '🇫🇷',
     direction: 'ltr',
     clubName: 'Club Menbar Jeune Créatif',
-    tagline: 'Créativité .. Échange .. Bâtir.',
+    tagline: 'Une tribune qui nous rassemble, la créativité qui nous unit.',
     city: 'Souk Ahras, Algérie',
     nav: {
       home: 'Accueil',
@@ -1034,7 +1034,7 @@ export const TRANSLATIONS: Record<Language, TranslationData> = {
     flag: '🇬🇧',
     direction: 'ltr',
     clubName: 'Menbar Creative Youth Club',
-    tagline: 'Creativity .. Connection .. Building.',
+    tagline: 'A platform that brings us together, creativity that unites us.',
     city: 'Souk Ahras, Algeria',
     nav: {
       home: 'Home',

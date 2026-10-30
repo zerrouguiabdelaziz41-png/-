@@ -13,11 +13,14 @@ import {
   Info,
   Users,
   Compass,
-  Award
+  Award,
+  Lock,
+  AlertCircle,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { ActivityItem, EventItem, NewsItem, ALL_EVENTS, NEWS } from '../data/clubData.ts';
 import { Language, TRANSLATIONS } from '../data/translations.ts';
+import { SupabaseClubService } from '../services/supabaseClubService.ts';
 
 // -------------------------------------------------------------
 // 1. Join / Membership Modal
@@ -36,6 +39,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, language 
     fullName: '',
     email: '',
     phone: '',
+    password: '',
     age: '20',
     city: language === 'ar' ? 'سوق أهراس' : 'Souk Ahras',
     selectedInterests: ['tech', 'volunteering'] as string[],
@@ -43,6 +47,8 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, language 
     idProofType: 'cin',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [memberId, setMemberId] = useState('');
 
   if (!isOpen) return null;
@@ -56,21 +62,72 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, language 
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const generatedId = 'MNR-' + Math.floor(100000 + Math.random() * 900000);
-    setMemberId(generatedId);
-    setSubmitted(true);
+    setErrorMessage(null);
+
+    const trimmedName = formData.fullName.trim();
+    if (!trimmedName || trimmedName.length < 3) {
+      setErrorMessage('يرجى إدخال الاسم الكامل بشكل صحيح.');
+      return;
+    }
+
+    const trimmedEmail = formData.email.trim();
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setErrorMessage('يرجى إدخال بريد إلكتروني صالح.');
+      return;
+    }
+
+    const trimmedPhone = formData.phone.trim();
+    if (!trimmedPhone || trimmedPhone.length < 8) {
+      setErrorMessage('يرجى إدخال رقم هاتف صحيح.');
+      return;
+    }
+
+    const passToUse = formData.password.trim() || 'Club2025@pass';
+    if (passToUse.length < 6) {
+      setErrorMessage('يجب أن تتكون كلمة المرور من 6 أحرف على الأقل.');
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#f97316', '#38bdf8', '#facc15', '#ffffff'],
+      const result = await SupabaseClubService.signUpClubMember({
+        email: trimmedEmail,
+        password: passToUse,
+        fullName: trimmedName,
+        phone: trimmedPhone,
+        age: parseInt(formData.age, 10) || 20,
+        interest: formData.selectedInterests[0] || 'technological',
+        motivation: formData.motivation.trim(),
+        city: formData.city,
       });
-    } catch {
-      // ignore
+
+      if (!result.success) {
+        setIsSubmitting(false);
+        setErrorMessage(result.arabicMessage);
+        return;
+      }
+
+      const generatedId = 'MNR-' + Math.floor(100000 + Math.random() * 900000);
+      setMemberId(generatedId);
+      setIsSubmitting(false);
+      setSubmitted(true);
+
+      try {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#f97316', '#38bdf8', '#facc15', '#ffffff'],
+        });
+      } catch {
+        // ignore
+      }
+    } catch (err: any) {
+      setIsSubmitting(false);
+      setErrorMessage(err?.message || 'حدث خطأ أثناء إرسال الطلب.');
     }
   };
 
@@ -109,6 +166,13 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, language 
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {errorMessage && (
+                <div className="p-3 rounded-xl bg-rose-950/60 border border-rose-500/50 text-rose-200 text-xs flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                  <p className="leading-relaxed">{errorMessage}</p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-slate-200 mb-1">
                   {t.modals.join.fullNameLabel}
@@ -150,6 +214,24 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, language 
                     className="w-full bg-[#0a233f] border border-cyan-800/60 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-200 mb-1 flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>كلمة المرور (لحساب العضوية)</span>
+                  </span>
+                  <span className="text-[10px] text-cyan-400">6 أحرف كحد أدنى</span>
+                </label>
+                <input
+                  type="password"
+                  placeholder="أدخل كلمة مرور الحساب (اختياري: سيتم توليد كلمة مرور افتراضية إن تُركت فارغة)"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="w-full bg-[#0a233f] border border-cyan-800/60 rounded-xl px-4 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-400 font-mono"
+                  dir="ltr"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -249,10 +331,11 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onClose, language 
 
               <button
                 type="submit"
-                className="btn-orange-gradient w-full py-3 rounded-full text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer mt-4"
+                disabled={isSubmitting}
+                className="btn-orange-gradient w-full py-3 rounded-full text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 cursor-pointer mt-4 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                <Sparkles className="w-4 h-4" />
-                <span>{t.modals.join.submitBtn}</span>
+                <Sparkles className={`w-4 h-4 ${isSubmitting ? 'animate-spin' : ''}`} />
+                <span>{isSubmitting ? 'جاري إنشاء الحساب وإرسال الطلب...' : t.modals.join.submitBtn}</span>
               </button>
             </form>
           </div>

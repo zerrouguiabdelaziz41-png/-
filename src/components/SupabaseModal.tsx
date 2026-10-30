@@ -213,12 +213,12 @@ VITE_SUPABASE_ANON_KEY="${anonKey || 'YOUR_ANON_PUBLISHABLE_KEY_HERE'}"`;
               {/* Fast Test / Override Input */}
               <div className="p-4 rounded-2xl bg-[#030c18] border border-cyan-900/60 space-y-3">
                 <label className="block text-xs font-bold text-cyan-200">
-                  إدخال / تجربة مفتاح Publishable Key (Anon Key) مباشرة في المتصفح:
+                  إدخال / تجربة مفتاح Publishable Key (يدعم sb_publishable_ و anon):
                 </label>
                 <div className="flex gap-2">
                   <input
                     type="password"
-                    placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    placeholder="sb_publishable_... أو eyJhbGciOi..."
                     value={anonKey}
                     onChange={(e) => handleSaveAndTest(e.target.value)}
                     className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#06182c] border border-cyan-800 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400"
@@ -234,7 +234,7 @@ VITE_SUPABASE_ANON_KEY="${anonKey || 'YOUR_ANON_PUBLISHABLE_KEY_HERE'}"`;
                   </button>
                 </div>
                 <p className="text-[11px] text-slate-400 leading-normal">
-                  💡 يمكنك لصق المفتاح العام هنا لاختباره فوراً، أو وضعه في ملف <code className="text-cyan-300 font-mono">.env</code> في متغير <code className="text-amber-300 font-mono">VITE_SUPABASE_ANON_KEY</code>.
+                  💡 يمكنك لصق المفتاح العام هنا لاختباره فوراً (يدعم المفاتيح الحديثة <code className="text-emerald-300 font-mono">sb_publishable_</code> والمفاتيح الكلاسيكية)، أو وضعه في ملف <code className="text-cyan-300 font-mono">.env.local</code>.
                 </p>
               </div>
             </>
@@ -248,14 +248,14 @@ VITE_SUPABASE_ANON_KEY="${anonKey || 'YOUR_ANON_PUBLISHABLE_KEY_HERE'}"`;
                   <span>أين تضع Project URL و Publishable Key؟</span>
                 </h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  تستخدم حزمة Vite البادئة <code className="text-amber-300 font-mono font-bold">VITE_</code> لتعريض المتغيرات الآمنة للواجهة الأمامية. يجب وضع المفتاحين في ملف <code className="text-cyan-300 font-mono">.env</code> في المجلد الرئيسي للمشروع كما يلي:
+                  تستخدم حزمة Vite البادئة <code className="text-amber-300 font-mono font-bold">VITE_</code> لتعريض المتغيرات الآمنة للواجهة الأمامية. يمكنك وضع المتغيرات في ملف <code className="text-cyan-300 font-mono font-bold">.env.local</code> أو <code className="text-cyan-300 font-mono font-bold">.env</code> في المجلد الرئيسي كما يلي:
                 </p>
               </div>
 
               {/* Code snippet with copy button */}
               <div className="relative rounded-2xl overflow-hidden border border-cyan-900/80 bg-[#020b14]">
                 <div className="flex items-center justify-between px-4 py-2 bg-[#041220] border-b border-cyan-900/60 text-xs text-slate-400 font-mono">
-                  <span>/.env</span>
+                  <span>/.env.local</span>
                   <button
                     onClick={copyEnvSnippet}
                     className="flex items-center gap-1 text-cyan-300 hover:text-white transition-colors cursor-pointer"
@@ -268,8 +268,8 @@ VITE_SUPABASE_ANON_KEY="${anonKey || 'YOUR_ANON_PUBLISHABLE_KEY_HERE'}"`;
 {`# 1. عنوان مشروعك في Supabase
 VITE_SUPABASE_URL="${url}"
 
-# 2. المفتاح العام (Publishable / Anon Key)
-VITE_SUPABASE_ANON_KEY="ضع_المفتاح_العام_الخاص_بك_هنا"`}
+# 2. المفتاح العام (sb_publishable_ أو anon)
+VITE_SUPABASE_ANON_KEY="sb_publishable_..."`}
                 </pre>
               </div>
 

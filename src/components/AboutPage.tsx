@@ -147,17 +147,10 @@ export const AboutPage: React.FC<AboutPageProps> = ({
       dir={isLtr ? 'ltr' : 'rtl'}
       className="min-h-screen bg-[#040f1c] text-white selection:bg-orange-500 selection:text-white pb-20"
     >
-      {/* 1. Hero Panorama & Breadcrumb Header Banner */}
-      <div className="relative w-full h-56 sm:h-64 lg:h-72 overflow-hidden border-b border-cyan-900/40">
-        <img
-          src="/assets/aistudio/_____________38f0e34a.png"
-          alt="Panoramic Banner"
-          className="w-full h-full object-cover object-center filter brightness-[0.78] contrast-105"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#040f1c] via-[#040f1c]/50 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#040f1c]/80 via-transparent to-[#040f1c]/80" />
-
-        {/* Ambient Top Glow */}
+      {/* 1. Hero Breadcrumb Header Banner */}
+      <div className="relative w-full h-56 sm:h-64 lg:h-72 overflow-hidden border-b border-cyan-900/40 bg-gradient-to-b from-[#05172b] via-[#041222] to-[#040f1c]">
+        {/* Ambient Top Glow & Radial Mesh */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-900/20 via-transparent to-transparent pointer-events-none" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-28 bg-gradient-to-b from-amber-500/15 via-cyan-500/10 to-transparent blur-2xl pointer-events-none" />
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-between py-6">

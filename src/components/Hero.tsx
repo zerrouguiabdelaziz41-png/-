@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, Play } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, ArrowRight, Play, ChevronLeft, ChevronRight, Pause, PlayCircle } from 'lucide-react';
 import { Language, TRANSLATIONS } from '../data/translations.ts';
 
 interface HeroProps {
@@ -15,6 +15,8 @@ export const Hero: React.FC<HeroProps> = ({
   language = 'ar',
 }) => {
   const [currentSlide, setCurrentSlide] = useState(1);
+  const [isPaused, setIsPaused] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const t = TRANSLATIONS[language] || TRANSLATIONS.ar;
   const isLtr = t.direction === 'ltr';
@@ -25,17 +27,58 @@ export const Hero: React.FC<HeroProps> = ({
     'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=2000&q=85',
   ];
 
+  const totalSlides = slidesBg.length;
+  const SLIDE_DURATION = 5000; // 5 seconds per slide
+
+  // Autoplay timer with progress bar
+  useEffect(() => {
+    if (isPaused) return;
+
+    const intervalTime = 50;
+    const step = (intervalTime / SLIDE_DURATION) * 100;
+
+    const timer = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          setCurrentSlide((curr) => (curr + 1) % totalSlides);
+          return 0;
+        }
+        return prev + step;
+      });
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [isPaused, totalSlides]);
+
+  const goToSlide = (idx: number) => {
+    setCurrentSlide(idx);
+    setProgress(0);
+  };
+
+  const handleNext = () => {
+    goToSlide((currentSlide + 1) % totalSlides);
+  };
+
+  const handlePrev = () => {
+    goToSlide((currentSlide - 1 + totalSlides) % totalSlides);
+  };
+
   const activeSlideData = t.hero.slides[currentSlide] || t.hero.slides[0];
   const bgImage = slidesBg[currentSlide] || slidesBg[1];
 
   return (
-    <section className="relative w-full overflow-hidden min-h-[460px] sm:min-h-[520px] lg:min-h-[560px] flex items-center">
-      {/* Background panoramic image with gradient overlays */}
+    <section
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      className="relative w-full overflow-hidden min-h-[460px] sm:min-h-[520px] lg:min-h-[560px] flex items-center group/hero select-none"
+    >
+      {/* Background panoramic image with smooth crossfade */}
       <div className="absolute inset-0 z-0">
         <img
+          key={bgImage}
           src={bgImage}
           alt="Youth community"
-          className="w-full h-full object-cover object-center filter brightness-[0.88] contrast-[1.05] transition-all duration-700 ease-out"
+          className="w-full h-full object-cover object-center filter brightness-[0.88] contrast-[1.05] transition-all duration-700 ease-out animate-fadeIn"
         />
 
         {/* Gradient overlays: Deep midnight blue gradient adapted to text direction */}
@@ -51,6 +94,23 @@ export const Hero: React.FC<HeroProps> = ({
         {/* Subtle radial warm glow */}
         <div className="absolute top-1/4 left-1/3 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none z-10" />
       </div>
+
+      {/* Side Interactive Navigation Chevrons */}
+      <button
+        onClick={isLtr ? handlePrev : handleNext}
+        aria-label="Previous Slide"
+        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-[#041224]/70 hover:bg-[#09223e] border border-cyan-700/40 hover:border-orange-500 text-white flex items-center justify-center opacity-0 group-hover/hero:opacity-100 transition-all cursor-pointer shadow-lg hover:scale-110 active:scale-95 hidden sm:flex"
+      >
+        <ChevronRight className="w-5 h-5 text-cyan-200" />
+      </button>
+
+      <button
+        onClick={isLtr ? handleNext : handlePrev}
+        aria-label="Next Slide"
+        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-[#041224]/70 hover:bg-[#09223e] border border-cyan-700/40 hover:border-orange-500 text-white flex items-center justify-center opacity-0 group-hover/hero:opacity-100 transition-all cursor-pointer shadow-lg hover:scale-110 active:scale-95 hidden sm:flex"
+      >
+        <ChevronLeft className="w-5 h-5 text-cyan-200" />
+      </button>
 
       {/* Decorative top geometric stripes */}
       <div
@@ -78,18 +138,24 @@ export const Hero: React.FC<HeroProps> = ({
         </svg>
       </div>
 
-      {/* Content Container */}
+      {/* Content Container with animated slide text */}
       <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full py-12 lg:py-16">
         <div
-          className={`flex flex-col max-w-2xl ${
+          key={currentSlide}
+          className={`flex flex-col max-w-2xl animate-fadeIn ${
             isLtr
               ? 'items-start text-left ml-0 mr-auto'
               : 'items-end text-right mr-0 ml-auto'
           }`}
         >
-          {/* Tagline / Kicker Badge */}
-          <div className="inline-flex items-center gap-2 mb-3 px-3.5 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/35 text-cyan-300 text-xs sm:text-sm font-bold backdrop-blur-sm shadow-sm">
+          {/* Tagline / Kicker Badge with interactive pause notice */}
+          <div className="inline-flex items-center gap-2 mb-3 px-3.5 py-1 rounded-full bg-cyan-950/60 border border-cyan-500/35 text-cyan-300 text-xs sm:text-sm font-bold backdrop-blur-sm shadow-sm transition-all hover:border-amber-400">
             <span>{activeSlideData.tagline}</span>
+            {isPaused && (
+              <span className="text-[10px] text-amber-400 font-normal opacity-80">
+                ({language === 'ar' ? 'متوقف مؤقتاً' : 'Paused'})
+              </span>
+            )}
           </div>
 
           {/* Huge Main Headline */}
@@ -113,7 +179,7 @@ export const Hero: React.FC<HeroProps> = ({
             {/* Primary Action Button */}
             <button
               onClick={onDiscoverActivities}
-              className="btn-orange-gradient px-7 py-3 rounded-full text-white font-bold text-base flex items-center gap-3 cursor-pointer group shadow-lg shadow-orange-600/30 transition-all hover:scale-[1.03]"
+              className="btn-orange-gradient px-7 py-3 rounded-full text-white font-bold text-base flex items-center gap-3 cursor-pointer group shadow-lg shadow-orange-600/30 transition-all hover:scale-[1.03] active:scale-95"
             >
               <span>{t.hero.ctaActivities}</span>
               {isLtr ? (
@@ -137,21 +203,32 @@ export const Hero: React.FC<HeroProps> = ({
         </div>
       </div>
 
-      {/* Slide Navigation Dots */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 bg-[#041224]/60 px-4 py-1.5 rounded-full backdrop-blur-md border border-cyan-800/30">
-        {slidesBg.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            aria-label={`Slide ${index + 1}`}
-            className={`transition-all rounded-full cursor-pointer ${
-              currentSlide === index
-                ? 'w-6 h-2 bg-white shadow-[0_0_8px_white]'
-                : 'w-2 h-2 bg-slate-400/50 hover:bg-slate-300'
-            }`}
-          />
-        ))}
+      {/* Interactive Slide Navigation Dots + Live Progress Indicator */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2.5 bg-[#041224]/80 px-4 py-2 rounded-full backdrop-blur-md border border-cyan-800/40 shadow-xl">
+        {slidesBg.map((_, index) => {
+          const isActive = currentSlide === index;
+          return (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              aria-label={`Slide ${index + 1}`}
+              className={`relative overflow-hidden transition-all rounded-full cursor-pointer ${
+                isActive
+                  ? 'w-10 h-2.5 bg-cyan-950 border border-cyan-700/60'
+                  : 'w-2.5 h-2.5 bg-slate-500/50 hover:bg-slate-300'
+              }`}
+            >
+              {isActive && (
+                <span
+                  style={{ width: `${progress}%` }}
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-orange-500 to-amber-400 rounded-full transition-all duration-75"
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
     </section>
   );
 };
+

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Logo } from './Logo.tsx';
-import { User, UserPlus, Globe, Menu, X, Check, Award, ShieldCheck, Database } from 'lucide-react';
+import { User, UserPlus, Globe, Menu, X, Check, Award, ShieldCheck, Database, Search } from 'lucide-react';
 import { Language, TRANSLATIONS } from '../data/translations.ts';
 import { getSupabaseAnonKey } from '../lib/supabase.ts';
 
@@ -32,6 +32,7 @@ interface NavbarProps {
   onOpenCard?: () => void;
   onOpenVerify?: () => void;
   onOpenSupabase?: () => void;
+  onOpenSearch?: () => void;
   currentLanguage?: Language;
   onSelectLanguage?: (lang: Language) => void;
 }
@@ -49,6 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCard,
   onOpenVerify,
   onOpenSupabase,
+  onOpenSearch,
   currentLanguage = 'ar',
   onSelectLanguage,
 }) => {
@@ -149,11 +151,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             </nav>
           </div>
 
-          {/* Circular Utility Action Icons (Exact Match to Reference Screenshot) */}
+          {/* Utility Action Area */}
           <div className="flex items-center gap-3">
-            
-            {/* User Profile Dropdown: Membership, My Account, Card, Verification */}
-            <div className="relative" ref={userDropdownRef}>
+            {/* User Profile Dropdown: Membership, My Account, Card, Verification, and Language */}
+            <div className="hidden lg:block relative" ref={userDropdownRef}>
               <button
                 onClick={() => {
                   setUserMenuOpen(!userMenuOpen);
@@ -369,27 +370,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </div>
 
-            {/* Supabase Database Connection Button */}
-            {onOpenSupabase && (
-              <button
-                onClick={onOpenSupabase}
-                aria-label="قاعدة بيانات Supabase"
-                title="قاعدة بيانات Supabase – فحص الاتصال والمفاتيح"
-                className="relative w-10 h-10 rounded-full flex items-center justify-center transition-all cursor-pointer shadow-sm active:scale-95 bg-[#0d2847]/70 hover:bg-[#133863] border border-cyan-800/40 text-slate-200 hover:text-emerald-400 hover:border-emerald-500/50"
-              >
-                <Database className="w-[18px] h-[18px]" />
-                <span
-                  className={`absolute top-1.5 right-1.5 w-2 h-2 rounded-full border border-[#040f1d] ${
-                    hasAnonKey ? 'bg-emerald-400' : 'bg-amber-400 animate-pulse'
-                  }`}
-                />
-              </button>
-            )}
-
-            {/* Language Switcher circular button (Matches reference UI exactly) */}
+            {/* Standalone Language Switcher ("استخراج اختيار اللغات لوحدها") */}
             <div className="relative" ref={langDropdownRef}>
               <button
-                onClick={() => setLangMenuOpen(!langMenuOpen)}
+                onClick={() => {
+                  setLangMenuOpen(!langMenuOpen);
+                  setUserMenuOpen(false);
+                }}
                 aria-label={t.nav.langTooltip}
                 title={t.nav.langTooltip}
                 aria-expanded={langMenuOpen}
@@ -412,7 +399,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 >
                   <div className="px-3.5 py-1.5 border-b border-cyan-900/50 text-[11px] font-bold text-cyan-300/80 uppercase tracking-wider flex items-center justify-between">
                     <span>{t.nav.langTooltip}</span>
-                    <span className="text-[10px] text-orange-400 uppercase font-mono">{currentLanguage}</span>
+                    <span className="text-[10px] text-orange-400 uppercase font-mono font-bold">{currentLanguage}</span>
                   </div>
 
                   <div className="py-1">
@@ -421,8 +408,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                       return (
                         <button
                           key={lang.code}
+                          type="button"
                           onClick={() => handleLanguageChange(lang.code)}
-                          className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-medium transition-colors cursor-pointer ${isLtr ? 'text-left' : 'text-right'} ${
+                          className={`w-full flex items-center justify-between px-3.5 py-2.5 text-xs font-medium transition-colors cursor-pointer ${
+                            isLtr ? 'text-left' : 'text-right'
+                          } ${
                             isSelected
                               ? 'bg-orange-500/15 text-orange-400 font-bold border-r-2 border-orange-500'
                               : 'text-slate-200 hover:bg-cyan-900/30 hover:text-white'
@@ -461,9 +451,38 @@ export const Navbar: React.FC<NavbarProps> = ({
 
         </div>
 
-        {/* Mobile Dropdown Menu */}
+        {/* Mobile Dropdown Menu ("الخانة") */}
         {mobileMenuOpen && (
-          <div className="lg:hidden pb-5 pt-2 border-t border-cyan-900/40 animate-fadeIn">
+          <div className="lg:hidden pb-5 pt-3 border-t border-cyan-900/40 animate-fadeIn">
+            {/* Quick Search Button in Mobile Drawer */}
+            {onOpenSearch && (
+              <div className="px-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenSearch();
+                  }}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-cyan-950/60 border border-cyan-800/60 text-slate-300 hover:text-white hover:bg-cyan-900/50 transition-all text-xs font-semibold cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Search className="w-4 h-4 text-cyan-400" />
+                    <span>
+                      {currentLanguage === 'ar'
+                        ? 'ابحث في الأنشطة والفعاليات والأخبار...'
+                        : currentLanguage === 'fr'
+                        ? 'Rechercher des activités, événements...'
+                        : 'Search activities, events, news...'}
+                    </span>
+                  </div>
+                  <kbd className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-900/70 border border-cyan-700/60 text-cyan-300">
+                    ⌘K
+                  </kbd>
+                </button>
+              </div>
+            )}
+
+            {/* Main Navigation Links */}
             <div className="flex flex-col space-y-1">
               {navLinks.map((link) => {
                 const isActive = activeTab === link.id;
@@ -483,7 +502,38 @@ export const Navbar: React.FC<NavbarProps> = ({
               })}
             </div>
 
-            {/* Mobile Membership Portal Section */}
+            {/* Language Switcher inside Mobile Menu ("داخل هذه الخانة") */}
+            <div className="mt-3 pt-3 border-t border-cyan-900/40">
+              <div className={`px-4 text-[11px] font-bold uppercase text-cyan-300/70 mb-2 flex items-center gap-1.5 ${isLtr ? 'text-left' : 'text-right'}`}>
+                <Globe className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{t.nav.langTooltip}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 px-3">
+                {LANGUAGES.map((lang) => {
+                  const isSelected = currentLanguage === lang.code;
+                  return (
+                    <button
+                      key={lang.code}
+                      type="button"
+                      onClick={() => {
+                        handleLanguageChange(lang.code);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-orange-500 text-white shadow-md'
+                          : 'bg-[#06182c] text-slate-300 border border-cyan-800/50 hover:bg-cyan-900/50'
+                      }`}
+                    >
+                      <span className="text-sm">{lang.flag}</span>
+                      <span className="text-xs">{lang.nativeName}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Mobile Membership & User Portal Section */}
             <div className="mt-3 pt-3 border-t border-cyan-900/40 flex flex-col gap-1.5">
               <div className={`px-4 text-[11px] font-bold uppercase text-cyan-300/70 ${isLtr ? 'text-left' : 'text-right'}`}>
                 {currentLanguage === 'ar' ? 'بوابة العضوية والحساب' : 'Membership Portal'}
@@ -491,9 +541,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
+                  if (onOpenAccount) onOpenAccount();
+                  else onNavigate('account');
+                }}
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-xs font-semibold text-slate-200 hover:bg-cyan-900/30 ${isLtr ? 'text-left' : 'text-right'}`}
+              >
+                <User className="w-4 h-4 text-[#f97316]" />
+                <span>{currentLanguage === 'ar' ? 'حسابي (لوحة تحكم العضو)' : currentLanguage === 'fr' ? 'Mon Compte' : 'My Account'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
                   onOpenJoin();
                 }}
-                className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold text-slate-200 hover:bg-cyan-900/30 ${isLtr ? 'text-left' : 'text-right'}`}
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-xs font-semibold text-slate-200 hover:bg-cyan-900/30 ${isLtr ? 'text-left' : 'text-right'}`}
               >
                 <UserPlus className="w-4 h-4 text-cyan-400" />
                 <span>{currentLanguage === 'ar' ? 'العضوية والأنضمام' : currentLanguage === 'fr' ? 'Adhésion' : 'Membership & Join'}</span>
@@ -501,13 +562,37 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  if (onOpenAccount) onOpenAccount();
-                  else onNavigate('account');
+                  if (onOpenCard) onOpenCard();
+                  else if (onOpenAccount) onOpenAccount();
                 }}
-                className={`flex items-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold text-slate-200 hover:bg-cyan-900/30 ${isLtr ? 'text-left' : 'text-right'}`}
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-xs font-semibold text-slate-200 hover:bg-cyan-900/30 ${isLtr ? 'text-left' : 'text-right'}`}
               >
-                <User className="w-4 h-4 text-[#f97316]" />
-                <span>{currentLanguage === 'ar' ? 'حسابي' : currentLanguage === 'fr' ? 'Mon Compte' : 'My Account'}</span>
+                <Award className="w-4 h-4 text-amber-400" />
+                <span>{currentLanguage === 'ar' ? 'بطاقة العضوية الرقمية' : currentLanguage === 'fr' ? 'Carte d\'adhérent digitale' : 'Digital Membership Card'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  if (onOpenVerify) onOpenVerify();
+                  else onNavigate('verification');
+                }}
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-lg text-xs font-semibold text-slate-200 hover:bg-cyan-900/30 ${isLtr ? 'text-left' : 'text-right'}`}
+              >
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>{currentLanguage === 'ar' ? 'التحقق من صحة العضوية' : currentLanguage === 'fr' ? 'Vérification QR' : 'Membership Verification'}</span>
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  if (onOpenSupabase) onOpenSupabase();
+                }}
+                className={`flex items-center justify-between px-4 py-2.5 rounded-lg text-xs font-semibold text-slate-200 hover:bg-cyan-900/30 ${isLtr ? 'text-left' : 'text-right'}`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Database className="w-4 h-4 text-emerald-400" />
+                  <span>{currentLanguage === 'ar' ? 'قاعدة بيانات Supabase' : 'Supabase Database'}</span>
+                </div>
+                <span className={`w-2 h-2 rounded-full ${hasAnonKey ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
               </button>
             </div>
           </div>

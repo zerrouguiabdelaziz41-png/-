@@ -119,15 +119,10 @@ export const MembershipCardModal: React.FC<MembershipCardModalProps> = ({
           id="printable-membership-card"
           className="relative w-full rounded-2xl overflow-hidden border-2 border-cyan-500/40 shadow-[0_0_35px_rgba(6,182,212,0.15)] bg-gradient-to-br from-[#06182c] via-[#040f1c] to-[#020b16] select-none"
         >
-          {/* Top Banner with Sunset Mountains & City Skyline */}
-          <div className="relative h-28 sm:h-32 w-full overflow-hidden border-b border-cyan-800/50">
-            <img
-              src="/assets/aistudio/_____________38f0e34a.png"
-              alt="Card Header Banner"
-              className="w-full h-full object-cover object-center filter brightness-[0.75] contrast-110"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#040f1c] via-[#040f1c]/40 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#040f1c]/80 via-transparent to-[#040f1c]/80" />
+          {/* Top Banner with Atmospheric Gradient & Ambient Glow */}
+          <div className="relative h-28 sm:h-32 w-full overflow-hidden border-b border-cyan-800/50 bg-gradient-to-r from-[#031527] via-[#072442] to-[#031527]">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-500/10 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute top-0 right-1/4 w-48 h-20 bg-cyan-500/10 rounded-full blur-xl pointer-events-none" />
 
             {/* Club Brand in Banner (Right side in RTL) */}
             <div className={`absolute top-3.5 ${isLtr ? 'left-4' : 'right-4'} flex items-center gap-2.5 z-10`}>

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ChevronUp } from 'lucide-react';
 import { Navbar } from './components/Navbar.tsx';
 import { Hero } from './components/Hero.tsx';
 import { ActivitiesSection } from './components/ActivitiesSection.tsx';
@@ -16,7 +17,7 @@ import {
   ContactModal,
   LegalModal,
 } from './components/Modals.tsx';
-import { ActivityItem, EventItem, NewsItem, FEATURED_EVENT, NEWS, ACTIVITIES } from './data/clubData.ts';
+import { ActivityItem, EventItem, NewsItem } from './data/clubData.ts';
 import { ContactPage } from './components/ContactPage.tsx';
 import { EventsPage } from './components/EventsPage.tsx';
 import { NewsPage } from './components/NewsPage.tsx';
@@ -26,8 +27,9 @@ import { AccountPage } from './components/AccountPage.tsx';
 import { VerificationPage } from './components/VerificationPage.tsx';
 import { MembershipCardModal, MemberData, DEFAULT_MEMBER } from './components/MembershipCardModal.tsx';
 import { SupabaseModal } from './components/SupabaseModal.tsx';
-import { Image as ImageIcon, Sparkles } from 'lucide-react';
-import { Language, TRANSLATIONS } from './data/translations.ts';
+import { QuickSearchModal } from './components/QuickSearchModal.tsx';
+import { ToastNotification, ToastMessage } from './components/ToastNotification.tsx';
+import { Language } from './data/translations.ts';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -48,11 +50,50 @@ export default function App() {
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [legalType, setLegalType] = useState<'privacy' | 'terms' | null>(null);
 
-  // Original design comparison overlay preview
-  const [showOriginalComparison, setShowOriginalComparison] = useState(false);
-  const [comparisonTarget, setComparisonTarget] = useState<
-    'about' | 'events' | 'news' | 'contact' | 'home' | 'membership' | 'account' | 'card' | 'verification'
-  >('membership');
+  // Interactive Global Quick Search Modal state
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Interactive Toast Notifications
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Scroll Progress & Scroll to Top Button
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  const addToast = (message: string, type: 'success' | 'info' | 'warning' = 'success', title?: string) => {
+    const id = Date.now().toString() + Math.random().toString(36).substring(2, 6);
+    setToasts((prev) => [...prev, { id, message, type, title, duration: 3500 }]);
+  };
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  // Keyboard shortcut listener (Ctrl+K or Cmd+K) & Scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+      if (totalHeight > 0) {
+        setScrollProgress((window.scrollY / totalHeight) * 100);
+      }
+      setShowScrollTop(window.scrollY > 350);
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   // Smooth scroll to sections
   const scrollToSection = (id: string) => {
@@ -69,11 +110,18 @@ export default function App() {
       dir={isLtr ? 'ltr' : 'rtl'}
       className="min-h-screen font-['Cairo',sans-serif] selection:bg-orange-500 selection:text-white transition-colors duration-300 bg-[#040f1c] text-white"
     >
+      {/* Top Reading / Scroll Progress Bar */}
+      <div
+        className="fixed top-0 left-0 h-[3px] bg-gradient-to-r from-orange-500 via-amber-400 to-cyan-400 z-50 transition-[width] duration-150 ease-out pointer-events-none"
+        style={{ width: `${scrollProgress}%` }}
+      />
+
       {/* Top Navigation Bar */}
       <Navbar
         activeTab={activeTab}
         currentLanguage={currentLanguage}
         onSelectLanguage={setCurrentLanguage}
+        onOpenSearch={() => setIsSearchOpen(true)}
         onNavigate={(tab) => {
           if (tab === 'about') {
             setActiveTab('about');
@@ -231,6 +279,11 @@ export default function App() {
               setCurrentMember(newMember);
               setActiveTab('account');
               window.scrollTo({ top: 0, behavior: 'smooth' });
+              addToast(
+                currentLanguage === 'ar'
+                  ? 'تم إنشاء بطاقة العضوية الخاصة بك بنجاح!'
+                  : 'Membership created successfully!'
+              );
             }}
             onOpenAccount={() => {
               setActiveTab('account');
@@ -238,6 +291,7 @@ export default function App() {
             }}
             onOpenPrivacy={() => setLegalType('privacy')}
             onOpenTerms={() => setLegalType('terms')}
+            onOpenSupabase={() => setIsSupabaseOpen(true)}
             language={currentLanguage}
           />
         ) : activeTab === 'account' ? (
@@ -292,6 +346,7 @@ export default function App() {
               <ActivitiesSection
                 onSelectActivity={(activity) => setSelectedActivity(activity)}
                 language={currentLanguage}
+                onToast={addToast}
               />
             </div>
 
@@ -324,6 +379,7 @@ export default function App() {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     language={currentLanguage}
+                    onToast={addToast}
                   />
                 </div>
 
@@ -339,6 +395,7 @@ export default function App() {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     language={currentLanguage}
+                    onToast={addToast}
                   />
                 </div>
               </div>
@@ -347,6 +404,19 @@ export default function App() {
         )}
       </main>
 
+      {/* Floating Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label={currentLanguage === 'ar' ? 'الرجوع إلى الأعلى' : 'Scroll to top'}
+          title={currentLanguage === 'ar' ? 'الرجوع إلى الأعلى' : 'Scroll to top'}
+          className="fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-[#0d2847]/90 hover:bg-[#133863] border border-cyan-500/50 hover:border-orange-500 text-cyan-300 hover:text-white shadow-[0_8px_25px_rgba(0,0,0,0.6)] flex items-center justify-center transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer backdrop-blur-md"
+        >
+          <ChevronUp className="w-5 h-5" />
+        </button>
+      )}
+
       {/* Footer */}
       <Footer
         onOpenPrivacy={() => setLegalType('privacy')}
@@ -354,215 +424,34 @@ export default function App() {
         language={currentLanguage}
       />
 
-      {/* Floating Design Comparison Tool */}
-      <div className={`fixed bottom-4 ${isLtr ? 'right-4' : 'left-4'} z-40`}>
-        <button
-          onClick={() => setShowOriginalComparison(!showOriginalComparison)}
-          className="flex items-center gap-2 bg-[#09223e]/90 hover:bg-[#0f345e] border border-cyan-500/40 text-cyan-200 hover:text-white px-3.5 py-2 rounded-full shadow-lg backdrop-blur-md text-xs font-bold transition-all cursor-pointer hover:scale-105"
-          title={
-            currentLanguage === 'ar'
-              ? 'معاينة الصورة الأصلية والتطابق'
-              : currentLanguage === 'fr'
-              ? 'Comparer avec le design original'
-              : 'Compare with original design'
-          }
-        >
-          <ImageIcon className="w-4 h-4 text-[#f97316]" />
-          <span>
-            {currentLanguage === 'ar'
-              ? 'مقارنة مع التصميم الأصلي'
-              : currentLanguage === 'fr'
-              ? 'Design Original'
-              : 'Original Design'}
-          </span>
-        </button>
-      </div>
+      {/* Interactive Global Quick Search Modal */}
+      <QuickSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onNavigate={(tab) => {
+          setActiveTab(tab);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onSelectActivity={(activity) => setSelectedActivity(activity)}
+        onSelectEvent={(event) => setSelectedEvent(event)}
+        onSelectNews={(news) => setSelectedNews(news)}
+        onOpenJoin={() => {
+          setActiveTab('membership');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenCard={() => setIsCardModalOpen(true)}
+        onOpenVerify={() => {
+          setActiveTab('verification');
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        language={currentLanguage}
+      />
 
-      {/* Original Screenshot Comparison Modal */}
-      {showOriginalComparison && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="relative max-w-5xl w-full bg-[#041427] border border-cyan-500/50 rounded-2xl p-4 overflow-hidden shadow-2xl">
-            <div className="flex flex-wrap justify-between items-center pb-3 mb-3 border-b border-cyan-900/40 gap-3">
-              <div className="flex items-center gap-3">
-                <Sparkles className="w-5 h-5 text-orange-400" />
-                <div className="flex items-center gap-2 bg-[#020b16] p-1 rounded-xl border border-cyan-800/40">
-                  <button
-                    onClick={() => setComparisonTarget('about')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      comparisonTarget === 'about'
-                        ? 'bg-[#f97316] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {currentLanguage === 'ar'
-                      ? 'تصميم عن النادي'
-                      : currentLanguage === 'fr'
-                      ? 'Design À Propos'
-                      : 'About Design'}
-                  </button>
-                  <button
-                    onClick={() => setComparisonTarget('membership')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      comparisonTarget === 'membership'
-                        ? 'bg-[#f97316] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {currentLanguage === 'ar'
-                      ? 'العضوية والأنضمام'
-                      : currentLanguage === 'fr'
-                      ? 'Adhésion'
-                      : 'Membership'}
-                  </button>
-                  <button
-                    onClick={() => setComparisonTarget('account')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      comparisonTarget === 'account'
-                        ? 'bg-[#f97316] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {currentLanguage === 'ar'
-                      ? 'حسابي'
-                      : currentLanguage === 'fr'
-                      ? 'Mon Compte'
-                      : 'My Account'}
-                  </button>
-                  <button
-                    onClick={() => setComparisonTarget('card')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      comparisonTarget === 'card'
-                        ? 'bg-[#f97316] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {currentLanguage === 'ar'
-                      ? 'بطاقة العضوية'
-                      : currentLanguage === 'fr'
-                      ? 'Carte Adhérent'
-                      : 'Membership Card'}
-                  </button>
-                  <button
-                    onClick={() => setComparisonTarget('verification')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      comparisonTarget === 'verification'
-                        ? 'bg-[#f97316] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {currentLanguage === 'ar'
-                      ? 'التحقق QR'
-                      : currentLanguage === 'fr'
-                      ? 'Vérification QR'
-                      : 'QR Verification'}
-                  </button>
-                  <button
-                    onClick={() => setComparisonTarget('about')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      comparisonTarget === 'about'
-                        ? 'bg-[#f97316] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {currentLanguage === 'ar'
-                      ? 'عن النادي'
-                      : currentLanguage === 'fr'
-                      ? 'À Propos'
-                      : 'About'}
-                  </button>
-                  <button
-                    onClick={() => setComparisonTarget('events')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      comparisonTarget === 'events'
-                        ? 'bg-[#f97316] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {currentLanguage === 'ar'
-                      ? 'الفعاليات'
-                      : currentLanguage === 'fr'
-                      ? 'Événements'
-                      : 'Events'}
-                  </button>
-                  <button
-                    onClick={() => setComparisonTarget('news')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      comparisonTarget === 'news'
-                        ? 'bg-[#f97316] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {currentLanguage === 'ar'
-                      ? 'الأخبار'
-                      : currentLanguage === 'fr'
-                      ? 'Actualités'
-                      : 'News'}
-                  </button>
-                  <button
-                    onClick={() => setComparisonTarget('contact')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      comparisonTarget === 'contact'
-                        ? 'bg-[#f97316] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {currentLanguage === 'ar'
-                      ? 'تواصل معنا'
-                      : currentLanguage === 'fr'
-                      ? 'Contact'
-                      : 'Contact'}
-                  </button>
-                  <button
-                    onClick={() => setComparisonTarget('home')}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      comparisonTarget === 'home'
-                        ? 'bg-[#f97316] text-white shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {currentLanguage === 'ar'
-                      ? 'الرئيسية'
-                      : currentLanguage === 'fr'
-                      ? 'Accueil'
-                      : 'Home'}
-                  </button>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowOriginalComparison(false)}
-                className="px-3 py-1 rounded-lg bg-cyan-900/40 text-cyan-200 text-xs hover:bg-cyan-800 cursor-pointer"
-              >
-                {currentLanguage === 'ar' ? 'إغلاق' : currentLanguage === 'fr' ? 'Fermer' : 'Close'}
-              </button>
-            </div>
-            <div className="max-h-[75vh] overflow-auto rounded-xl border border-cyan-800/40 bg-black/40 p-1">
-              <img
-                src={
-                  comparisonTarget === 'membership'
-                    ? '/assets/aistudio/__________________54f1de4a.png'
-                    : comparisonTarget === 'account'
-                    ? '/assets/aistudio/______c00c13ac.png'
-                    : comparisonTarget === 'card'
-                    ? '/assets/aistudio/______________2f52be7d.png'
-                    : comparisonTarget === 'verification'
-                    ? '/assets/aistudio/_________________1fd88ed8.png'
-                    : comparisonTarget === 'about'
-                    ? '/assets/aistudio/__________ef4da63a.png'
-                    : comparisonTarget === 'events'
-                    ? '/assets/aistudio/________________________________636ae388.png'
-                    : comparisonTarget === 'news'
-                    ? '/assets/aistudio/_____________38f0e34a.png'
-                    : comparisonTarget === 'contact'
-                    ? '/assets/aistudio/____________________________________7b8a7fee.png'
-                    : '/assets/aistudio/________________31643738.png'
-                }
-                alt="Design reference"
-                className="w-full h-auto object-contain"
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Interactive Toast Notifications */}
+      <ToastNotification
+        toasts={toasts}
+        onDismiss={removeToast}
+      />
 
       {/* Interactive Modals */}
       <JoinModal
